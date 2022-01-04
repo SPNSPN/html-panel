@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8"></meta>
+	<script src="panel.js"></script>
+	<link rel="stylesheet" href="panel.css"></link>
+	<title>panel</title>
+</head>
+<body>
+	<script>
+	let set_status = function (state)
+	{
+		let monitor = document.querySelector("#status-monitor");
+		monitor.setAttribute("status", state);
+		monitor.innerText = state;
+	};
+	let get_status = function ()
+	{
+		return document.querySelector("#status-monitor").getAttribute("status");
+	};
+	let get_selector_status = function ()
+	{
+		return document.querySelector("#mode-selector").getAttribute("status");
+	};
+	let set_selector_status = function (state)
+	{
+		let selector = document.querySelector("#mode-selector");
+		selector.innerText = state;
+		selector.setAttribute("status", state);
+	};
+
+	let select_manual = function ()
+	{
+		set_status("MANUAL");
+		set_selector_status("MANUAL");
+	};
+
+	let select_auto = function ()
+	{
+		set_status("PRERUN");
+		set_selector_status("AUTO");
+	};
+
+	function transit_autorun ()
+	{
+		set_status("AUTORUN");
+	};
+
+	function emergency_stop ()
+	{
+		set_status("STOP");
+		set_selector_status("MANUAL");
+	};
+
+	function reset_error ()
+	{
+		set_status("MANUAL");
+		set_selector_status("MANUAL");
+	};
+
+	let transitions = {
+		"MANUAL":		[select_auto, emergency_stop]
+		, "PRERUN":		[select_manual, emergency_stop, transit_autorun]
+		, "AUTORUN":	[select_manual, emergency_stop]
+		, "STOP":		[reset_error, emergency_stop]
+	};
+
+	function try_transit (transitter)
+	{
+		let current_state = get_status();
+		let transitters = transitions[current_state];
+		if (undefined === transitters) { throw `undefined state: ${current_state}`; }
+
+		let accept = transitters.indexOf(transitter);
+		if (accept > -1) { transitter(); }
+	};
+
+	function try_select ()
+	{
+		let current_selector_state = get_selector_status();
+		if ("MANUAL" == current_selector_state)
+		{
+			return select_auto;
+		}
+		else if ("AUTO" == current_selector_state)
+		{
+			return select_manual;
+		}
+
+		throw `undefined selector state: ${current_selector_state}`;
+	};
+
+	</script>
+
+	<div class="panel-page" id="main">
+		<div class="panel-label" id="status-monitor" status="MANUAL">MANUAL</div>
+		<div class="panel-base" id="buttons">
+			<div class="panel-button" id="stop" onclick="try_transit(emergency_stop)">STOP</div>
+			<div class="panel-button" id="reset" onclick="try_transit(reset_error)">RESET</div>
+			<div class="panel-selector" id="mode-selector" status="MANUAL" onclick="try_transit(try_select())">MANUAL</div>
+			<div class="panel-button" id="autorun" onclick="try_transit(transit_autorun)">AUTORUN</div>
+		</div>
+		<div class="panel-base" id="pages">
+			<a href="menu.html"><div class="panel-button" id="page-menu">MENU</div></a>
+			<a href="monitor.html"><div class="panel-button" id="page-monitor">MONITOR</div></a>
+		</div>
+	</div>
+</body>
+</html>
